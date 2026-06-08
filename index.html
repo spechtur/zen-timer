@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Tee-Timer | Achtsames Aufbrühen</title>
+    <!-- Google Fonts für moderne, minimalistische Typografie -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================================================
+           1. DESIGN-SYSTEM & VARIABLEN (CSS CUSTOM PROPERTIES)
+           ========================================================================== */
+        :root {
+            /* Das Herzstück des Designs: Eine einzige, leuchtende Matcha-Akzentfarbe */
+            --color-accent: hsl(145, 90%, 45%);
+            --color-accent-glow: hsla(145, 90%, 45%, 0.35);
+            --color-accent-dim: hsl(145, 40%, 25%);
+            
+            /* Dunkler, beruhigender Hintergrund für Zen-Atmosphäre */
+            --color-bg-dark: hsl(220, 20%, 6%);
+            --color-bg-card: hsla(220, 20%, 11%, 0.7);
+            --color-bg-card-hover: hsla(220, 20%, 15%, 0.8);
+            
+            /* Text-Farben mit hoher Lesbarkeit und Kontrast */
+            --color-text-primary: hsl(0, 0%, 95%);
+            --color-text-secondary: hsl(220, 10%, 70%);
+            --color-text-muted: hsl(220, 10%, 45%);
+            
+            /* UI-Konstanten */
+            --border-radius: 16px;
+            --border-glow: 1px solid hsla(145, 90%, 45%, 0.15);
+            --border-normal: 1px solid hsla(0, 0%, 100%, 0.05);
+            --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Standard-Resets für ein konsistentes Aussehen auf allen Geräten */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--color-bg-dark);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        /* Feines, atmosphärisches Hintergrundmuster für Tiefe */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 10% 20%, hsla(145, 90%, 45%, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, hsla(220, 90%, 45%, 0.02) 0%, transparent 50%),
+                radial-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 0);
+            background-size: 100% 100%, 100% 100%, 24px 24px;
+            z-index: -2;
+        }
+
+        /* Fullscreen Canvas für das Konfetti - fängt keine Klicks ab */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ==========================================================================
+           2. LAYOUT-STRUKTUR (MINIMALISTISCHES RASTER / GRID-DESIGN)
+           ========================================================================== */
+        
+        /* Der äußere Container zentriert die Anwendung auf großen Bildschirmen */
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Header: Titel und Untertitel */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: linear-gradient(to right, var(--color-text-primary), var(--color-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        /* Das Haupt-Grid: Strukturierte Kacheln */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            width: 100%;
+            animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        /* Basis-Karte (Glassmorphism & Glow-Effekte) */
+        .grid-card {
+            background-color: var(--color-bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            border: var(--border-normal);
+            padding: 30px;
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Hover-Effekte auf den Karten für lebendige Interaktionen */
+        .grid-card:hover {
+            border-color: hsla(145, 90%, 45%, 0.25);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 
+                        0 0 30px hsla(145, 90%, 45%, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* Zuweisung der Rasterspalten (Desktop Default) */
+        .card-presets {
+            grid-column: span 7;
+        }
+
+        .card-timer {
+            grid-column: span 5;
+            grid-row: span 2; /* Erstreckt sich über zwei Zeilen */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 480px;
+            border: var(--border-glow);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 
+                        0 0 20px hsla(145, 90%, 45%, 0.08);
+        }
+
+        .card-settings {
+            grid-column: span 7;
+        }
+
+        .card-meditation {
+            grid-column: span 12;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            align-items: center;
+        }
+
+        /* ==========================================================================
+           3. KOMPONENTEN & INHALTE
+           ========================================================================== */
+
+        /* Kartentitel */
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--color-accent);
+            margin-bottom: 20px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: linear-gradient(to right, hsla(145, 90%, 45%, 0.3), transparent);
+        }
+
+        /* --- PRESET-CARD (TEE-AUSWAHL) --- */
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+        }
+
+        .preset-btn {
+            background: hsla(0, 0%, 100%, 0.02);
+            border: var(--border-normal);
+            border-radius: 12px;
+            padding: 16px;
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-align: left;
+            position: relative;
+        }
+
+        .preset-btn:hover {
+            background: hsla(145, 90%, 45%, 0.05);
+            border-color: hsla(145, 90%, 45%, 0.4);
+            transform: scale(1.02);
+        }
+
+        .preset-btn.active {
+            background: hsla(145, 90%, 45%, 0.12);
+            border-color: var(--color-accent);
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.15);
+        }
+
+        .preset-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .preset-temp {
+            font-size: 0.8rem;
+            color: var(--color-accent);
+            font-weight: 500;
+            display: block;
+        }
+
+        .preset-time {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            display: block;
+            margin-top: 4px;
+        }
+
+        /* --- TIMER-CARD (KREIS & ZEITANZEIGE) --- */
+        .timer-visual {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        /* Fortschrittskreis SVG */
+        .timer-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg); /* Startet oben statt rechts */
+        }
+
+        .timer-circle-bg {
+            fill: none;
+            stroke: hsla(0, 0%, 100%, 0.03);
+            stroke-width: 6;
+        }
+
+        .timer-circle-progress {
+            fill: none;
+            stroke: var(--color-accent);
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear;
+            filter: drop-shadow(0 0 8px var(--color-accent-glow));
+        }
+
+        /* Digitale Uhranzeige im Kreis */
+        .timer-text-container {
+            text-align: center;
+            z-index: 10;
+        }
+
+        .timer-display {
+            font-size: 3.5rem;
+            font-weight: 200;
+            font-variant-numeric: tabular-nums; /* Verhindert Wackeln der Zahlen */
+            letter-spacing: -0.02em;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .timer-status {
+            font-size: 0.8rem;
+            color: var(--color-accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 500;
+            height: 18px;
+        }
+
+        /* Timer-Aktionsknöpfe */
+        .timer-controls {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .btn {
+            flex: 1;
+            background: transparent;
+            border: var(--border-normal);
+            color: var(--color-text-primary);
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--color-accent);
+            color: hsl(220, 20%, 6%);
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 230, 118, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: hsl(145, 90%, 50%);
+            box-shadow: 0 6px 20px rgba(0, 230, 118, 0.4), 
+                        0 0 15px var(--color-accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        .btn-secondary:hover {
+            background: hsla(0, 0%, 100%, 0.05);
+            border-color: var(--color-text-secondary);
+        }
+
+        /* --- SETTINGS-CARD (SLIDERS & CUSTOM) --- */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .setting-group label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        /* Anpassbare Custom Time Inputs */
+        .custom-time-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time-input {
+            width: 70px;
+            background: hsla(0, 0%, 100%, 0.03);
+            border: var(--border-normal);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--color-text-primary);
+            font-family: var(--font-family);
+            font-size: 1rem;
+            text-align: center;
+            transition: var(--transition-smooth);
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            background: hsla(145, 90%, 45%, 0.05);
+        }
+
+        /* Schieberegler für Lautstärken */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: hsla(0, 0%, 100%, 0.1);
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--color-accent-glow);
+            transition: var(--transition-smooth);
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        .slider-value {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            width: 35px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Audio Test / Zen Sound Toggle */
+        .sound-toggles {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .checkbox-container input {
+            display: none;
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: var(--border-normal);
+            border-radius: 6px;
+            background: hsla(0, 0%, 100%, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-smooth);
+        }
+
+        .checkbox-container:hover .checkbox-custom {
+            border-color: hsla(145, 90%, 45%, 0.5);
+        }
+
+        .checkbox-container input:checked + .checkbox-custom {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .checkbox-custom::after {
+            content: '✓';
+            color: hsl(220, 20%, 6%);
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: none;
+        }
+
+        .checkbox-container input:checked + .checkbox-custom::after {
+            display: block;
+        }
+
+        /* --- MEDITATION-CARD (BREATHING & QUOTES) --- */
+        .breath-guide-container {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            border-right: var(--border-normal);
+            padding-right: 30px;
+        }
+
+        .breath-circle-outer {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: hsla(145, 90%, 45%, 0.04);
+            border: 1px solid hsla(145, 90%, 45%, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Pulsierender Atem-Kreis */
+        .breath-circle-inner {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            box-shadow: 0 0 20px var(--color-accent-glow);
+            transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(1);
+        }
+
+        /* CSS-Klassen zur Steuerung des Atemkreises via JS */
+        .breath-circle-inner.inhale {
+            transform: scale(1.6);
+        }
+
+        .breath-circle-inner.hold {
+            transform: scale(1.6);
+            filter: drop-shadow(0 0 15px var(--color-accent));
+        }
+
+        .breath-circle-inner.exhale {
+            transform: scale(0.9);
+        }
+
+        .breath-circle-inner.hold-empty {
+            transform: scale(0.9);
+            opacity: 0.6;
+        }
+
+        .breath-instruction-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .breath-state {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .breath-sub {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Weiser Spruch */
+        .quote-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        .quote-text {
+            font-style: italic;
+            color: var(--color-text-primary);
+            font-weight: 300;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .quote-text::before {
+            content: '„';
+            font-size: 2rem;
+            color: var(--color-accent);
+            position: absolute;
+            left: -18px;
+            top: -10px;
+            opacity: 0.3;
+        }
+
+        .quote-author {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            font-weight: 500;
+            text-align: right;
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            text-align: center;
+            padding: 30px;
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            border-top: var(--border-normal);
+            margin-top: 40px;
+        }
+
+        footer a {
+            color: var(--color-accent);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ==========================================================================
+           4. RESPONSIVENESS (MEDIA QUERIES)
+           ========================================================================== */
+        @media (max-width: 1024px) {
+            .card-presets {
+                grid-column: span 12;
+            }
+            .card-timer {
+                grid-column: span 12;
+                grid-row: span 1;
+                min-height: auto;
+                padding: 40px;
+            }
+            .card-settings {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 20px 10px;
+            }
+            header h1 {
+                font-size: 1.8rem;
+            }
+            .card-meditation {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .breath-guide-container {
+                border-right: none;
+                border-bottom: var(--border-normal);
+                padding-right: 0;
+                padding-bottom: 20px;
+            }
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ==========================================================================
+           5. KEYFRAME ANIMATIONEN
+           ========================================================================== */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Konfetti-Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <h1>Zen Tee-Timer</h1>
+            <p>Finde Ruhe im Moment des Aufbrühens.</p>
+        </header>
+
+        <!-- Haupt-Raster (Grid Layout) -->
+        <div class="grid-layout">
+            
+            <!-- 1. Tee-Presets Kachel -->
+            <section class="grid-card card-presets">
+                <div>
+                    <h2 class="card-title">Teesorten</h2>
+                    <div class="presets-grid" id="presets-container">
+                        <!-- Presets werden via JavaScript geladen -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Der eigentliche Zen-Timer (Fokus-Kachel) -->
+            <section class="grid-card card-timer">
+                <div class="timer-visual">
+                    <svg class="timer-svg" viewBox="0 0 100 100">
+                        <circle class="timer-circle-bg" cx="50" cy="50" r="45"></circle>
+                        <circle class="timer-circle-progress" id="progress-circle" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="0"></circle>
+                    </svg>
+                    
+                    <div class="timer-text-container">
+                        <div class="timer-display" id="time-display">02:00</div>
+                        <div class="timer-status" id="timer-status">Bereit</div>
+                    </div>
+                </div>
+
+                <div class="timer-controls">
+                    <button class="btn btn-primary" id="btn-start">
+                        <span>▶</span> Start
+                    </button>
+                    <button class="btn btn-secondary" id="btn-reset">
+                        <span>↺</span> Reset
+                    </button>
+                </div>
+            </section>
+
+            <!-- 3. Einstellungen Kachel (Custom Time & Audio) -->
+            <section class="grid-card card-settings">
+                <div>
+                    <h2 class="card-title">Einstellungen</h2>
+                    <div class="settings-grid">
+                        
+                        <!-- Custom Zeit einstellen -->
+                        <div class="setting-group">
+                            <label>Benutzerdefinierte Zeit</label>
+                            <div class="custom-time-inputs">
+                                <input type="number" id="input-min" class="time-input" min="0" max="99" value="2" placeholder="Min">
+                                <span>:</span>
+                                <input type="number" id="input-sec" class="time-input" min="0" max="59" value="00" placeholder="Sek">
+                            </div>
+                        </div>
+
+                        <!-- Audio-Regler -->
+                        <div class="setting-group">
+                            <label>Lautstärke & Sounds</label>
+                            <div class="slider-container">
+                                <span style="font-size: 0.8rem; color: var(--color-text-secondary);">Gong</span>
+                                <input type="range" id="volume-gong" class="slider" min="0" max="1" step="0.05" value="0.5">
+                                <span class="slider-value" id="volume-gong-val">50%</span>
+                            </div>
+                            
+                            <div class="slider-container" style="margin-top: 8px;">
+                                <span style="font-size: 0.8rem; color: var(--color-text-secondary);">Regen</span>
+                                <input type="range" id="volume-ambient" class="slider" min="0" max="1" step="0.05" value="0.2">
+                                <span class="slider-value" id="volume-ambient-val">20%</span>
+                            </div>
+                            
+                            <div class="sound-toggles" style="margin-top: 12px;">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="toggle-ambient-audio">
+                                    <span class="checkbox-custom"></span>
+                                    Meditatives Regenrauschen
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Meditations- & Atem-Übungs-Kachel (Breathing / Wisdom) -->
+            <section class="grid-card card-meditation">
+                
+                <!-- Atemübung (Links / Oben) -->
+                <div class="breath-guide-container">
+                    <div class="breath-circle-outer">
+                        <div class="breath-circle-inner" id="breath-node"></div>
+                    </div>
+                    <div class="breath-instruction-text">
+                        <div class="breath-state" id="breath-state-text">Achtsamkeit</div>
+                        <div class="breath-sub" id="breath-sub-text">Folge dem Rhythmus des Kreises.</div>
+                    </div>
+                </div>
+
+                <!-- Zitat (Rechts / Unten) -->
+                <div class="quote-container">
+                    <p class="quote-text" id="quote-display">Das Teetrinken wäscht den Staub des Alltags von der Seele.</p>
+                    <p class="quote-author" id="quote-author-display">— Sen no Rikyu</p>
+                </div>
+
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>Erstellt mit Liebe zum Detail. &copy; 2026 Zen Tee-Timer.</p>
+    </footer>
+
+    <!-- ==========================================================================
+       6. JAVASCRIPT LOGIK UND DOKUMENTATION
+       ========================================================================== -->
+    <script>
+        /* ==========================================================================
+           A. DATENSTRUKTUR (TEESORTEN-PRESETS & WEISHEITEN)
+           ========================================================================== */
+        
+        // Vordefinierte Teesorten mit Brühempfehlungen und individuellen Farbpaletten
+        const TEA_PRESETS = [
+            { 
+                id: 'green', 
+                name: 'Grüner Tee', 
+                min: 2, 
+                sec: 0, 
+                temp: '80°C', 
+                desc: 'Fein und erfrischend. Zu heiße Wassertemperaturen machen ihn bitter.',
+                color: 'hsl(145, 80%, 45%)',
+                colorGlow: 'hsla(145, 80%, 45%, 0.35)',
+                colorDim: 'hsl(145, 40%, 20%)',
+                confettiHue: 145
+            },
+            { 
+                id: 'black', 
+                name: 'Schwarzer Tee', 
+                min: 3, 
+                sec: 0, 
+                temp: '95°C', 
+                desc: 'Kräftig und anregend. Perfekt mit frisch kochendem Wasser.',
+                color: 'hsl(15, 85%, 50%)',
+                colorGlow: 'hsla(15, 85%, 50%, 0.35)',
+                colorDim: 'hsl(15, 40%, 20%)',
+                confettiHue: 15
+            },
+            { 
+                id: 'herbal', 
+                name: 'Kräutertee', 
+                min: 5, 
+                sec: 0, 
+                temp: '100°C', 
+                desc: 'Wohltuend und beruhigend. Benötigt eine lange Ziehzeit.',
+                color: 'hsl(45, 90%, 48%)',
+                colorGlow: 'hsla(45, 90%, 48%, 0.35)',
+                colorDim: 'hsl(45, 40%, 20%)',
+                confettiHue: 45
+            },
+            { 
+                id: 'white', 
+                name: 'Weißer Tee', 
+                min: 2, 
+                sec: 30, 
+                temp: '85°C', 
+                desc: 'Mild und elegant. Gewonnen aus den zartesten Knospen.',
+                color: 'hsl(195, 80%, 60%)',
+                colorGlow: 'hsla(195, 80%, 60%, 0.35)',
+                colorDim: 'hsl(195, 45%, 22%)',
+                confettiHue: 195
+            },
+            { 
+                id: 'oolong', 
+                name: 'Oolong Tee', 
+                min: 3, 
+                sec: 0, 
+                temp: '90°C', 
+                desc: 'Komplex und aromatisch. Liegt zwischen grünem und schwarzem Tee.',
+                color: 'hsl(170, 85%, 42%)',
+                colorGlow: 'hsla(170, 85%, 42%, 0.35)',
+                colorDim: 'hsl(170, 45%, 18%)',
+                confettiHue: 170
+            }
+        ];
+
+        // Zen-Weisheiten für Entspannung während des Ziehvorgangs
+        const ZEN_QUOTES = [
+            { text: "Das Teetrinken wäscht den Staub des Alltags von der Seele.", author: "Sen no Rikyu" },
+            { text: "In der Schale Tee spiegelt sich die Unendlichkeit des Himmels.", author: "Zen-Weisheit" },
+            { text: "Ruhe bringt Gleichgewicht und Gelassenheit in dein Leben.", author: "Laotse" },
+            { text: "Tue nichts eilig. Alles braucht seine Zeit zum Reifen.", author: "Östliches Sprichwort" },
+            { text: "Verweile im gegenwärtigen Moment. Er ist der einzige, den du besitzt.", author: "Thich Nhat Hanh" },
+            { text: "Die reinste Form des Geistes ist die Stille.", author: "Zen-Meister" },
+            { text: "Geduld ist die Kunst zu hoffen.", author: "Luc de Clapiers" }
+        ];
+
+        /* ==========================================================================
+           B. GLOBALE ANWENDUNGS-VARIABLEN
+           ========================================================================== */
+        let totalSeconds = 120;      // Gesamtlaufzeit in Sekunden (Standard: 2 min)
+        let secondsLeft = 120;       // Verbleibende Sekunden
+        let timerInterval = null;    // Referenz auf das laufende Intervall
+        let isRunning = false;       // Aktueller Zustand des Timers
+        let activePresetId = 'green';// Aktive Teesorte
+
+        /* Audio Variablen */
+        let audioContext = null;     // Web Audio API Kontext
+        let ambientSource = null;    // Quelle für das Rauschen (Pink Noise)
+        let ambientGainNode = null;  // Lautstärkeregler für das Rauschen
+
+        /* ==========================================================================
+           C. INITIALISIERUNG DER APP
+           ========================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialisiert das Farbschema für das Standard-Preset (Grüner Tee)
+            const initialPreset = TEA_PRESETS.find(p => p.id === activePresetId);
+            if (initialPreset) {
+                document.documentElement.style.setProperty('--color-accent', initialPreset.color);
+                document.documentElement.style.setProperty('--color-accent-glow', initialPreset.colorGlow);
+                document.documentElement.style.setProperty('--color-accent-dim', initialPreset.colorDim);
+            }
+
+            renderPresets();
+            updateTimerDisplay();
+            initEventListeners();
+            initBreathingGuide();
+            cycleQuotes();
+            
+            // Regelmäßiger Wechsel der Zitate alle 25 Sekunden
+            setInterval(cycleQuotes, 25000);
+        });
+
+        /* ==========================================================================
+           D. BENUTZEROBERFLÄCHE (UI RENDERING)
+           ========================================================================== */
+        
+        // Generiert die Tee-Karten dynamisch aus dem Array
+        function renderPresets() {
+            const container = document.getElementById('presets-container');
+            container.innerHTML = ''; // Vorherigen Inhalt leeren
+            
+            TEA_PRESETS.forEach(preset => {
+                const button = document.createElement('button');
+                button.className = `preset-btn ${preset.id === activePresetId ? 'active' : ''}`;
+                button.id = `preset-${preset.id}`;
+                button.innerHTML = `
+                    <span class="preset-name">${preset.name}</span>
+                    <span class="preset-temp">${preset.temp}</span>
+                    <span class="preset-time">${formatTime(preset.min * 60 + preset.sec)}</span>
+                `;
+                
+                // Klick-Event lädt die Zeiten dieses Tees
+                button.addEventListener('click', () => selectPreset(preset));
+                container.appendChild(button);
+            });
+        }
+
+        // Wählt ein Tee-Preset aus und setzt den Timer zurück
+        function selectPreset(preset) {
+            // Aktive Klasse umschalten
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`preset-${preset.id}`).classList.add('active');
+            
+            activePresetId = preset.id;
+            
+            // Farbschema dynamisch anpassen: Setzt CSS-Custom-Properties
+            document.documentElement.style.setProperty('--color-accent', preset.color);
+            document.documentElement.style.setProperty('--color-accent-glow', preset.colorGlow);
+            document.documentElement.style.setProperty('--color-accent-dim', preset.colorDim);
+            
+            // Setzt Zeitfelder zurück auf Preset-Werte
+            document.getElementById('input-min').value = preset.min;
+            document.getElementById('input-sec').value = String(preset.sec).padStart(2, '0');
+            
+            // Lädt die Zeit in den Timer
+            resetTimer();
+        }
+
+        /* ==========================================================================
+           E. TIMER CORE LOGIK
+           ========================================================================== */
+        
+        // Aktualisiert die Zeitanzeige auf dem Bildschirm
+        function updateTimerDisplay() {
+            const display = document.getElementById('time-display');
+            display.textContent = formatTime(secondsLeft);
+            
+            // Aktualisiert auch den Dokumenten-Titel im Tab für besseres Multitasking
+            document.title = isRunning ? `(${formatTime(secondsLeft)}) Zen Tee-Timer` : 'Zen Tee-Timer';
+
+            // Berechnet und zeichnet den Fortschrittskreis neu (SVG stroke-dashoffset)
+            const circle = document.getElementById('progress-circle');
+            const circumference = 2 * Math.PI * 45; // r=45 -> ca. 282.74
+            
+            // Verhindert Division durch Null
+            const progress = totalSeconds > 0 ? (secondsLeft / totalSeconds) : 0;
+            const offset = circumference * (1 - progress);
+            
+            circle.style.strokeDashoffset = offset;
+        }
+
+        // Formatiert Sekunden in MM:SS Format (z.B. 125s -> "02:05")
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // Startet oder pausiert den Timer
+        function toggleTimer() {
+            const startBtn = document.getElementById('btn-start');
+            
+            if (isRunning) {
+                // Pausieren
+                clearInterval(timerInterval);
+                isRunning = false;
+                startBtn.innerHTML = '<span>▶</span> Weiter';
+                startBtn.classList.remove('active');
+                document.getElementById('timer-status').textContent = 'Pausiert';
+                
+                // Falls Umgebungssound läuft, stoppen wir ihn bei Pause (optional, aber beruhigend)
+                stopAmbientSound();
+            } else {
+                // Starten
+                // Wenn wir von 0 starten oder Timer zurückgesetzt wurde, lade Werte neu
+                if (secondsLeft <= 0) {
+                    resetTimer();
+                }
+                
+                // Initialisiert AudioContext bei der ersten Benutzeraktion (Browser-Sicherheit)
+                initAudio();
+                
+                isRunning = true;
+                startBtn.innerHTML = '<span>⏸</span> Pause';
+                document.getElementById('timer-status').textContent = 'Zieht...';
+                
+                // Startet den Regen-Sound falls Checkbox aktiv
+                if (document.getElementById('toggle-ambient-audio').checked) {
+                    startAmbientSound();
+                }
+                
+                // Der eigentliche Timer-Loop (jede Sekunde)
+                timerInterval = setInterval(() => {
+                    if (secondsLeft > 0) {
+                        secondsLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        // Timer abgelaufen!
+                        onTimerComplete();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Setzt den Timer komplett auf den Ausgangszustand zurück
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            
+            // Liest Zeitwerte aus den Eingabefeldern
+            const min = parseInt(document.getElementById('input-min').value) || 0;
+            const sec = parseInt(document.getElementById('input-sec').value) || 0;
+            
+            totalSeconds = (min * 60) + sec;
+            secondsLeft = totalSeconds;
+            
+            // Setzt UI-Elemente zurück
+            document.getElementById('btn-start').innerHTML = '<span>▶</span> Start';
+            document.getElementById('timer-status').textContent = 'Bereit';
+            
+            stopAmbientSound();
+            updateTimerDisplay();
+        }
+
+        // Wird aufgerufen, wenn der Tee fertig gebrüht ist
+        function onTimerComplete() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            secondsLeft = 0;
+            updateTimerDisplay();
+            
+            document.getElementById('timer-status').textContent = 'Fertig!';
+            document.getElementById('btn-start').innerHTML = '<span>▶</span> Start';
+            
+            // Audio stoppen & Gong spielen
+            stopAmbientSound();
+            playZenGong();
+            
+            // Bunte Konfetti-Explosion auslösen!
+            triggerConfetti();
+        }
+
+        /* ==========================================================================
+           F. PROZEDURALE ZEN-SOUNDS (WEB AUDIO API)
+           ========================================================================== */
+        
+        // Initialisiert den Audio-Kontext (vermeidet Autoplay-Restriktionen der Browser)
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            // Startet den Kontext, falls er im Schlafmodus war (Sicherheitsfeature moderner Browser)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        // Synthetisiert einen warmen, tiefen Gong-Ton (Klangschalen-Simulation)
+        function playZenGong() {
+            initAudio();
+            
+            // Lautstärke holen
+            const volumeSetting = parseFloat(document.getElementById('volume-gong').value);
+            if (volumeSetting === 0) return; // Stummgeschaltet
+            
+            // Frequenzen für eine harmonische Klangschale (Grundton & Obertöne)
+            const frequencies = [144, 216, 288, 360, 432, 576, 720];
+            // Amplitude/Lautstärke jedes Obertons
+            const gains = [1.0, 0.5, 0.35, 0.2, 0.15, 0.08, 0.04];
+            
+            // Haupt-Lautstärke-Knoten für das Ausklingen (GainNode)
+            const masterGain = audioContext.createGain();
+            masterGain.gain.setValueAtTime(volumeSetting * 0.4, audioContext.currentTime);
+            // Exponential-Rampe lässt den Sound sanft und natürlich über 8 Sekunden verblassen
+            masterGain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 8.0);
+            
+            // Ein Tiefpass-Filter mildert die ganz scharfen Obertöne mit der Zeit ab
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800, audioContext.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(250, audioContext.currentTime + 6.0);
+            
+            // Für jede Frequenz erstellen wir einen Oszillator
+            frequencies.forEach((freq, index) => {
+                const osc = audioContext.createOscillator();
+                const oscGain = audioContext.createGain();
+                
+                // Wechselnde Wellenformen erzeugen ein komplexes Timbre (Klangfarbe)
+                osc.type = index % 2 === 0 ? 'sine' : 'triangle';
+                osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+                
+                // Feine Verstimmung (Detuning) erzeugt eine schwebende, lebendige Vibration
+                osc.detune.setValueAtTime((Math.random() - 0.5) * 8, audioContext.currentTime);
+                
+                // Oberschwingungen klingen physikalisch schneller ab als der Grundton
+                oscGain.gain.setValueAtTime(gains[index], audioContext.currentTime);
+                oscGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + (6.0 / (index + 0.8)));
+                
+                // Verbindungen aufbauen: Oszillator -> Einzel-Gain -> Tiefpass-Filter
+                osc.connect(oscGain);
+                oscGain.connect(filter);
+                
+                // Starten und nach 8 Sekunden stoppen
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 8.0);
+            });
+            
+            // Gesamte Kette verbinden: Filter -> Master-Lautstärke -> Lautsprecher
+            filter.connect(masterGain);
+            masterGain.connect(audioContext.destination);
+        }
+
+        // Erzeugt ein meditatives, tiefes Rauschen (Rosa Rauschen simuliert Regen/Wind)
+        function createPinkNoiseBuffer() {
+            const bufferSize = 4 * audioContext.sampleRate; // 4 Sekunden Loop-Länge
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            
+            // Rosa Rauschen mathematisch angenähert (Voss-McCartney Algorithmus)
+            let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                b0 = 0.99886 * b0 + white * 0.0555179;
+                b1 = 0.99332 * b1 + white * 0.0750759;
+                b2 = 0.96900 * b2 + white * 0.1538520;
+                b3 = 0.86650 * b3 + white * 0.3104856;
+                b4 = 0.55000 * b4 + white * 0.5329522;
+                b5 = -0.7616 * b5 - white * 0.0168980;
+                const pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                b6 = white * 0.115926;
+                output[i] = pink * 0.11; // Pegel anpassen
+            }
+            return noiseBuffer;
+        }
+
+        // Startet das Rauschen mit dynamischem Filter (simuliert Windböen)
+        function startAmbientSound() {
+            initAudio();
+            if (ambientSource) return; // Läuft bereits
+            
+            const buffer = createPinkNoiseBuffer();
+            ambientSource = audioContext.createBufferSource();
+            ambientSource.buffer = buffer;
+            ambientSource.loop = true;
+            
+            // Frequenz-Filter für weichen Regen-Charakter
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(600, audioContext.currentTime);
+            
+            // Ein langsamer LFO (Niederfrequenz-Oszillator) moduliert die Filter-Frequenz
+            // Dadurch schwillt das Rauschen wellenartig an und ab (wie Wind)
+            const lfo = audioContext.createOscillator();
+            lfo.frequency.setValueAtTime(0.06, audioContext.currentTime); // Sehr langsam: 16 Sekunden pro Welle
+            
+            const lfoGain = audioContext.createGain();
+            lfoGain.gain.setValueAtTime(150, audioContext.currentTime); // Modulationstiefe +/- 150Hz
+            
+            lfo.connect(lfoGain);
+            lfoGain.connect(filter.frequency);
+            
+            // Lautstärke-Regelung
+            ambientGainNode = audioContext.createGain();
+            updateAmbientVolume();
+            
+            // Signalweg verknüpfen
+            ambientSource.connect(filter);
+            filter.connect(ambientGainNode);
+            ambientGainNode.connect(audioContext.destination);
+            
+            // Beide Quellen starten
+            lfo.start();
+            ambientSource.start();
+        }
+
+        // Stoppt das Hintergrundrauschen
+        function stopAmbientSound() {
+            if (ambientSource) {
+                try {
+                    ambientSource.stop();
+                } catch(e) {}
+                ambientSource.disconnect();
+                ambientSource = null;
+            }
+        }
+
+        // Passt die Lautstärke des Rauschens in Echtzeit an
+        function updateAmbientVolume() {
+            if (ambientGainNode && audioContext) {
+                const vol = parseFloat(document.getElementById('volume-ambient').value);
+                ambientGainNode.gain.setValueAtTime(vol * 0.5, audioContext.currentTime);
+            }
+        }
+
+        /* ==========================================================================
+           G. INTERAKTIVE CONFETTI-EXPLOSION (CANVAS ENGINE)
+           ========================================================================== */
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let confettiParticles = [];
+        let confettiAnimationId = null;
+
+        // Passt die Größe des Canvas an das Browserfenster an
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Repräsentiert ein einzelnes Konfetti-Teilchen
+        class ConfettiParticle {
+            constructor(x, y, baseHue) {
+                this.x = x;
+                this.y = y;
+                
+                // Zufällige Größe & harmonische Farbpalette passend zum aktuellen Tee
+                this.size = Math.random() * 8 + 6;
+                // Streut die Farben leicht um den Basiston des ausgewählten Tees
+                const hue = (baseHue + (Math.random() * 50 - 25) + 360) % 360;
+                this.color = `hsl(${hue}, 85%, 60%)`;
+                
+                // Physikalische Parameter (Explosionskraft nach oben & seitlich)
+                const angle = Math.random() * Math.PI - Math.PI; // Nach oben gerichtet
+                const speed = Math.random() * 12 + 8;
+                this.velocityX = Math.cos(angle) * speed;
+                this.velocityY = Math.sin(angle) * speed;
+                
+                // Schwerkraft und Luftwiderstand
+                this.gravity = 0.25;
+                this.drag = 0.97;
+                
+                // Rotationsbewegung für realistisches Taumeln im 3D-Raum
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = (Math.random() - 0.5) * 10;
+                this.scaleY = 1; // Simuliert Kippen
+                this.scaleYDirection = Math.random() > 0.5 ? 0.05 : -0.05;
+            }
+
+            update() {
+                // Geschwindigkeit reduzieren durch Luftwiderstand, Schwerkraft anwenden
+                this.velocityX *= this.drag;
+                this.velocityY *= this.drag;
+                this.velocityY += this.gravity;
+                
+                // Position aktualisieren
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                
+                // Rotation und Neigung berechnen
+                this.rotation += this.rotationSpeed;
+                this.scaleY += this.scaleYDirection;
+                if (this.scaleY > 1 || this.scaleY < -1) {
+                    this.scaleYDirection = -this.scaleYDirection;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.scale(1, this.scaleY); // Erzwingt 3D-Kippeffekt
+                
+                ctx.fillStyle = this.color;
+                // Zeichnet ein abgerundetes Konfetti-Plättchen
+                ctx.beginPath();
+                ctx.rect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Löst die Explosion aus (spawnt 180 Partikel)
+        function triggerConfetti() {
+            // Falls eine alte Animation läuft, stoppen
+            if (confettiAnimationId) {
+                cancelAnimationFrame(confettiAnimationId);
+            }
+            
+            confettiParticles = [];
+            
+            // Ermittelt den Farbton des aktuell ausgewählten Tees
+            const currentPreset = TEA_PRESETS.find(p => p.id === activePresetId) || TEA_PRESETS[0];
+            const baseHue = currentPreset.confettiHue;
+            
+            // Zwei Explosionszentren (links unten, rechts unten) für ein episches Feuerwerk
+            const source1X = canvas.width * 0.25;
+            const source2X = canvas.width * 0.75;
+            const sourceY = canvas.height + 20;
+            
+            for (let i = 0; i < 90; i++) {
+                confettiParticles.push(new ConfettiParticle(source1X, sourceY, baseHue));
+                confettiParticles.push(new ConfettiParticle(source2X, sourceY, baseHue));
+            }
+            
+            animateConfetti();
+        }
+
+        // Render-Loop für das Konfetti
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Filtert Teilchen heraus, die aus dem Bildschirm gefallen sind
+            confettiParticles = confettiParticles.filter(p => p.y < canvas.height + 50 && p.x > -50 && p.x < canvas.width + 50);
+            
+            confettiParticles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            
+            // Führe Animation fort, solange noch Partikel da sind
+            if (confettiParticles.length > 0) {
+                confettiAnimationId = requestAnimationFrame(animateConfetti);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Canvas komplett leeren
+            }
+        }
+
+        /* ==========================================================================
+           H. ATEMÜBUNG & MEITATIONS-STEUERUNG
+           ========================================================================== */
+        
+        // Führt eine geführte Atemübung im 16-Sekunden-Takt durch (Box-Breathing)
+        function initBreathingGuide() {
+            const breathNode = document.getElementById('breath-node');
+            const stateText = document.getElementById('breath-state-text');
+            const subText = document.getElementById('breath-sub-text');
+            
+            // 4 Atemphasen (4s Einatmen, 4s Halten, 4s Ausatmen, 4s Halten)
+            const phases = [
+                { state: 'inhale', text: 'Einatmen...', sub: 'Fülle deine Lungen sanft.', duration: 4000 },
+                { state: 'hold', text: 'Anhalten...', sub: 'Ruhe im Moment finden.', duration: 4000 },
+                { state: 'exhale', text: 'Ausatmen...', sub: 'Lass alle Spannungen los.', duration: 4000 },
+                { state: 'hold-empty', text: 'Anhalten...', sub: 'Völlige Entspannung genießen.', duration: 4000 }
+            ];
+            
+            let currentPhaseIndex = 0;
+            
+            function runPhase() {
+                const phase = phases[currentPhaseIndex];
+                
+                // CSS Klasse auf den Kreis anwenden (skaliert und glüht entsprechend)
+                breathNode.className = 'breath-circle-inner'; // Reset
+                breathNode.classList.add(phase.state);
+                
+                // Texte aktualisieren
+                stateText.textContent = phase.text;
+                subText.textContent = phase.sub;
+                
+                // Nächste Phase timen
+                currentPhaseIndex = (currentPhaseIndex + 1) % phases.length;
+                setTimeout(runPhase, phase.duration);
+            }
+            
+            runPhase(); // Startet den unendlichen Loop
+        }
+
+        // Wechselt das angezeigte Zen-Zitat zufällig
+        function cycleQuotes() {
+            const quoteText = document.getElementById('quote-display');
+            const quoteAuthor = document.getElementById('quote-author-display');
+            
+            // Verhindert, dass zweimal hintereinander das gleiche Zitat gewählt wird
+            let index;
+            do {
+                index = Math.floor(Math.random() * ZEN_QUOTES.length);
+            } while (quoteText.textContent === `„${ZEN_QUOTES[index].text}“`);
+            
+            // Einblend-Animation simulieren durch kurzes Verblassen
+            quoteText.style.opacity = 0;
+            quoteAuthor.style.opacity = 0;
+            quoteText.style.transition = 'opacity 0.8s ease';
+            quoteAuthor.style.transition = 'opacity 0.8s ease';
+            
+            setTimeout(() => {
+                quoteText.textContent = ZEN_QUOTES[index].text;
+                quoteAuthor.textContent = `— ${ZEN_QUOTES[index].author}`;
+                quoteText.style.opacity = 1;
+                quoteAuthor.style.opacity = 1;
+            }, 800);
+        }
+
+        /* ==========================================================================
+           I. EVENTS & KOPPLUNG DER STEUERELEMENTE
+           ========================================================================== */
+        function initEventListeners() {
+            // Buttons
+            document.getElementById('btn-start').addEventListener('click', toggleTimer);
+            document.getElementById('btn-reset').addEventListener('click', resetTimer);
+            
+            // Custom Inputs: Wenn geändert, wird der Timer zurückgesetzt
+            const onCustomTimeChange = () => {
+                // Entfernt die aktive Preset-Klasse, da jetzt ein Custom-Wert aktiv ist
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                resetTimer();
+            };
+            
+            document.getElementById('input-min').addEventListener('input', onCustomTimeChange);
+            document.getElementById('input-sec').addEventListener('input', onCustomTimeChange);
+            
+            // Sliders
+            const volGong = document.getElementById('volume-gong');
+            volGong.addEventListener('input', () => {
+                document.getElementById('volume-gong-val').textContent = `${Math.round(volGong.value * 100)}%`;
+                
+                // Spielt einen kurzen Testgong beim Ziehen (mit Entprellung)
+                debounce(playZenGong, 300)();
+            });
+            
+            const volAmbient = document.getElementById('volume-ambient');
+            volAmbient.addEventListener('input', () => {
+                document.getElementById('volume-ambient-val').textContent = `${Math.round(volAmbient.value * 100)}%`;
+                updateAmbientVolume();
+            });
+            
+            // Ambient Checkbox
+            document.getElementById('toggle-ambient-audio').addEventListener('change', function() {
+                if (this.checked && isRunning) {
+                    startAmbientSound();
+                } else {
+                    stopAmbientSound();
+                }
+            });
+        }
+
+        // Hilfsfunktion: Debounce zur Begrenzung von Event-Aufrufen (z.B. Test-Gong beim Slider-Verschieben)
+        let debounceTimeout = null;
+        function debounce(func, delay) {
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+    </script>
+</body>
+</html>
